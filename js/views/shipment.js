@@ -143,7 +143,8 @@ function docCard(s, type) {
   return h("div", { class: "card doc-card" },
     h("div", { class: "card-head" },
       h("h3", { text: DOC_TYPES[type] }),
-      doc ? badge(isBol ? "on file" : `${doc.lines?.length || 0} lines`, "good") : badge("missing")),
+      h("div", {}, doc?.source === "ai" ? badge("read by AI, check it", "warn") : null,
+        doc ? badge(isBol ? "on file" : `${doc.lines?.length || 0} lines`, "good") : badge("missing"))),
     doc ? h("div", { class: "fields" },
       field("Document no.", bind(doc, "ref", { maxlength: 64 }, () => save("shipments"))),
       isBol || type === "PACKING_LIST" ? [
@@ -230,6 +231,7 @@ function editLines(s, type) {
         h("button", { class: "btn", onclick: close, text: "Cancel" }),
         h("button", { class: "btn primary", onclick: () => {
           doc.lines = doc.lines.filter((l) => String(l.sku || "").trim() || String(l.description || "").trim());
+          delete doc.source; // a person has now reviewed and saved these lines
           s.docs[type] = doc;
           save("shipments");
           close();

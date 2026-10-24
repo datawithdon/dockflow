@@ -20,13 +20,23 @@ function markNav(name) {
     a.classList.toggle("active", on);
     if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
   }
-  const n = exceptionsNow().filter((e) => e.severity === "high").length;
+  let n = 0;
+  try { n = exceptionsNow().filter((e) => e.severity === "high").length; } catch { /* badge is optional */ }
   const b = $("#nav-alerts");
   b.textContent = String(n);
   b.classList.toggle("hidden", n === 0);
 }
 
 document.addEventListener("routechange", (e) => markNav(e.detail.name));
+
+// Refuse to run inside another site's frame (clickjacking). GitHub Pages
+// can't send X-Frame-Options / frame-ancestors headers, so this is done here.
+if (window.top !== window.self) {
+  document.body.replaceChildren(Object.assign(document.createElement("p"), {
+    className: "empty", textContent: "DockFlow can't be shown inside another page. Open it directly in its own tab.",
+  }));
+  throw new Error("DockFlow refused to load in a frame.");
+}
 
 await loadState();
 start($("#view"));

@@ -140,10 +140,16 @@ Rows with no SKU or a non-numeric quantity are skipped and reported.
 ## Data, privacy and security
 
 - All data lives in your browser's IndexedDB: doors, clients, tariffs, shipments, appointments, claims, invoices and photos. Use **Settings → Data → Download backup** to move it or keep a copy. Photos are optional in the backup.
-- A strict Content-Security-Policy allows only the app's own files to load, and allows network calls only to `api.anthropic.com`. That means no third-party scripts, fonts or analytics.
-- Everything on screen is rendered through `textContent`, never `innerHTML`, so text from documents, CSVs, backups or AI output can't inject markup.
-- Spreadsheet formulas in CSV exports are neutralised to block formula injection.
-- Backup files are validated before they're restored. Images must be base64 PNG, JPEG, WebP or GIF data URLs.
+- Data in IndexedDB is not encrypted. Anyone who can use your computer's browser profile can read it.
+- **Content-Security-Policy:** only the app's own files can load, and the only network calls allowed are to `api.anthropic.com`. There are no third-party scripts, fonts, analytics or service workers.
+- **No markup injection:** everything is displayed through `textContent`, never `innerHTML`. That covers text from documents, CSVs, backups and AI output.
+- **Backups and stored data are untrusted input.** Every record is rebuilt from a fixed schema when you restore a backup and each time the app loads. Unknown keys (including `__proto__`), wrong types and oversized values are dropped. Images must be base64 PNG, JPEG, WebP or GIF data URLs.
+- **Clickjacking:** the app refuses to run inside another site's frame. GitHub Pages can't send `frame-ancestors` headers, so the app enforces this itself.
+- **Fail-safe:** if a screen ever fails to render, you get a link to Settings → Data instead of a blank page.
+- **Photos:** they're re-encoded in the browser, which strips EXIF metadata, including GPS location.
+- **CSV exports:** spreadsheet formulas are neutralised to block formula injection.
+- **AI reading:** documents you send are processed by Anthropic under your API account's data policy. Documents read by AI are marked **read by AI, check it** until a person saves the lines.
+- **Shared origin:** GitHub Pages serves every project site of one account from the same origin (`<user>.github.io`). Those sites share storage, so any of them could read DockFlow's data and a *remembered* API key. Either keep that account free of untrusted pages, host DockFlow on its own domain or subdomain, or run it locally.
 - **Settings → Data → Erase all data** removes everything, including the saved API key.
 
 ## Project structure
@@ -163,6 +169,7 @@ js/engine/          pure logic, unit-tested in Node
   analytics.js      metrics
   csv.js            CSV parse/export
   extract.js        Claude request + response validation
+  sanitize.js       schema rebuild for backups and stored data
 js/views/           one file per screen
 js/ai.js            Claude API call
 js/db.js            IndexedDB storage

@@ -6,6 +6,7 @@
 import * as db from "./db.js";
 import { DEFAULT_MODEL } from "./engine/extract.js";
 import { localDate } from "./engine/dates.js";
+import { sanitizeCollections, sanitizePhoto, sanitizeSettings, isSafeImage } from "./engine/sanitize.js";
 
 export const COLLECTIONS = ["docks", "clients", "tariffs", "shipments", "appointments", "claims", "invoices"];
 
@@ -25,11 +26,13 @@ export const state = {
 };
 
 export async function loadState() {
+  // Stored data is re-validated on every load too: IndexedDB is shared with
+  // every page on this origin, so it is not trusted blindly.
   const saved = await db.getKV("settings");
-  state.settings = { ...DEFAULT_SETTINGS(), ...(saved || {}) };
-  state.settings.warehouse = { ...DEFAULT_SETTINGS().warehouse, ...(saved?.warehouse || {}) };
-  state.settings.nextNo = { ...DEFAULT_SETTINGS().nextNo, ...(saved?.nextNo || {}) };
-  for (const c of COLLECTIONS) state[c] = (await db.getKV(c)) || [];
+  state.settings = sanitizeSettings(saved, DEFAULT_SETTINGS());
+  const raw = {};
+  for (const c of COLLECTIONS) raw[c] = await db.getKV(c);
+  Object.assign(state, sanitizeCollections(raw));
   return Boolean(saved);
 }
 
@@ -99,22 +102,20 @@ export function exportBackup() {
 }
 
 export async function importBackup(data, photos = []) {
-  if (!data || data.app !== "dockflow") throw new Error("This is not a DockFlow backup file.");
+  if (!data || typeof data !== "object" || data.app !== "dockflow") throw new Error("This is not a DockFlow backup file.");
   for (const c of COLLECTIONS) if (data[c] != null && !Array.isArray(data[c])) throw new Error(`Backup field "${c}" is not a list.`);
-  state.settings = { ...DEFAULT_SETTINGS(), ...(data.settings || {}) };
-  state.settings.warehouse = { ...DEFAULT_SETTINGS().warehouse, ...(data.settings?.warehouse || {}) };
-  if (state.settings.warehouse.logo && !/^data:image\/(png|jpeg|webp|gif);base64,/.test(state.settings.warehouse.logo)) state.settings.warehouse.logo = "";
-  for (const c of COLLECTIONS) state[c] = (data[c] || []).filter((x) => x && typeof x === "object" && typeof x.id === "string");
-  // Drop records the views can't render rather than crash on them.
-  state.appointments = state.appointments.filter((a) => typeof a.start === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(a.start));
-  state.shipments = state.shipments.filter((s) => typeof s.ref === "string");
-  for (const s of state.shipments) if (s.docs && typeof s.docs !== "object") s.docs = {};
-  state.claims = state.claims.filter((c) => typeof c.createdAt === "string");
-  for (const p of photos) if (isSafeImage(p?.dataUrl) && typeof p.id === "string") await db.putPhoto(p);
+  const clean = sanitizeCollections(data);
+  await db.wipe();
+  state.settings = sanitizeSettings(data.settings, DEFAULT_SETTINGS());
+  for (const c of COLLECTIONS) state[c] = clean[c];
+  for (const p of Array.isArray(photos) ? photos.slice(0, 5000) : []) {
+    const safe = sanitizePhoto(p);
+    if (safe) await db.putPhoto(safe);
+  }
   saveAll();
 }
 
-export const isSafeImage = (u) => typeof u === "string" && /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(u);
+export { isSafeImage };
 
 export async function wipeAll() {
   await db.wipe();

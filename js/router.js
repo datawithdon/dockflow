@@ -18,7 +18,13 @@ export function rerender() {
   const { name, args } = parse();
   current = name;
   const scrollY = window.scrollY;
-  routes.get(name)(outlet, args);
+  try {
+    routes.get(name)(outlet, args);
+  } catch (e) {
+    // Never leave the user stuck: show a way back to backup/erase.
+    console.error(e);
+    outlet.replaceChildren(failSafe(e));
+  }
   window.scrollTo(0, scrollY);
   document.dispatchEvent(new CustomEvent("routechange", { detail: { name } }));
 }
@@ -39,3 +45,14 @@ export function start(el) {
 }
 
 export const currentRoute = () => current;
+
+function failSafe(err) {
+  const el = (tag, cls, text) => Object.assign(document.createElement(tag), { className: cls || "", textContent: text || "" });
+  const box = el("div", "card empty-state");
+  const link = el("a", "btn", "Go to Settings → Data");
+  link.href = "#/settings/data";
+  box.append(el("h2", "", "This screen couldn't be shown"),
+    el("p", "muted", "Some saved data is in an unexpected format. You can download a backup, restore an older one, or erase and start again."),
+    el("p", "small mono", String(err?.message || err).slice(0, 200)), link);
+  return box;
+}
