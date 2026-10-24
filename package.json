@@ -1,0 +1,12 @@
+{
+  "name": "dockflow",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Inbound control tower for warehouses: dock appointments, document matching, receiving and OS&D, demurrage & detention clocks, exceptions and client storage billing. Static web app, no backend.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "start": "python3 -m http.server 8000 --bind 127.0.0.1"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://api.anthropic.com; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'self'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="DockFlow: inbound control tower for warehouses. Dock appointments, document matching, receiving and OS&amp;D, demurrage and detention clocks, exceptions and client storage billing.">
+  <title>DockFlow</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/styles.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#/today"><span class="brand-mark" aria-hidden="true">D</span>DockFlow</a>
+      <nav class="tabs" aria-label="Main">
+        <a href="#/today" data-view="today">Today <span id="nav-alerts" class="badge bad hidden"></span></a>
+        <a href="#/dock" data-view="dock">Dock</a>
+        <a href="#/shipments" data-view="shipments">Shipments</a>
+        <a href="#/claims" data-view="claims">Claims</a>
+        <a href="#/billing" data-view="billing">Billing</a>
+        <a href="#/analytics" data-view="analytics">Analytics</a>
+        <a href="#/settings" data-view="settings">Settings</a>
+      </nav>
+    </div>
+  </header>
+  <main id="view" tabindex="-1"><p class="empty">Loading…</p></main>
+  <footer>DockFlow keeps all data in this browser. Nothing is sent anywhere unless you use AI document reading with your own Claude API key.</footer>
+  <div id="print-area" aria-hidden="true"></div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <noscript><p class="empty">DockFlow needs JavaScript.</p></noscript>
+</body>
+</html>
